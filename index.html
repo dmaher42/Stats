@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="/Stats/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kids Basketball Stats Tracker</title>
@@ -1384,7 +1385,7 @@ Field Goal %: ${calculateFGP()}%
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
             navigator.serviceWorker
-              .register('./sw.js')
+              .register('/Stats/sw.js')
               .catch(err => console.log('Service worker registration failed:', err));
           });
         }

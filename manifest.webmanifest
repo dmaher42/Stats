@@ -1,7 +1,8 @@
 {
   "name": "Kids Basketball Stats Tracker",
   "short_name": "BBall Tracker",
-  "start_url": "./index.html",
+  "start_url": "/Stats/",
+  "scope": "/Stats/",
   "display": "standalone",
   "background_color": "#f5f7fa",
   "theme_color": "#3498db",
