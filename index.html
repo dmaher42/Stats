@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kids Basketball Stats Tracker</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#3498db">
     <style>
         * {
             margin: 0;
@@ -1372,10 +1374,19 @@ Field Goal %: ${calculateFGP()}%
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.add('show');
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 2000);
+        }
+        
+        // Register service worker for PWA support
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker
+              .register('./sw.js')
+              .catch(err => console.log('Service worker registration failed:', err));
+          });
         }
     </script>
 </body>
