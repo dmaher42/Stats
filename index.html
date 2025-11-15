@@ -108,7 +108,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         .form-group {
@@ -348,12 +348,17 @@
             z-index: 2000;
         }
 
+        .recovery-modal.hidden {
+            display: none !important;
+        }
+
         .recovery-content {
             background-color: white;
             padding: 30px;
             border-radius: 8px;
             max-width: 400px;
             text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .recovery-content h3 {
@@ -629,11 +634,13 @@
             // Set today's date as default
             document.getElementById('gameDate').valueAsDate = new Date();
             
-            // Check for unfinished game
-            checkForUnfinishedGame();
-            
-            // Setup event listeners
+            // Setup event listeners first
             setupEventListeners();
+            
+            // Check for unfinished game after setting up listeners
+            setTimeout(() => {
+                checkForUnfinishedGame();
+            }, 100);
             
             // Show setup screen by default
             showScreen('setup');
@@ -647,30 +654,46 @@
                     if (game.playerName && game.opponent) {
                         document.getElementById('recoveryGameInfo').textContent = 
                             `${game.playerName} vs ${game.opponent}`;
-                        document.getElementById('recoveryModal').classList.remove('hidden');
+                        const modal = document.getElementById('recoveryModal');
+                        modal.classList.remove('hidden');
+                        console.log('Recovery modal shown');
                     }
                 } catch (e) {
+                    console.error('Error parsing unfinished game:', e);
                     localStorage.removeItem('unfinishedGame');
                 }
             }
         }
 
         function setupEventListeners() {
-            // Recovery modal buttons
-            document.getElementById('continueGameBtn').addEventListener('click', () => {
-                const unfinishedGame = localStorage.getItem('unfinishedGame');
-                if (unfinishedGame) {
-                    currentGame = JSON.parse(unfinishedGame);
-                    document.getElementById('recoveryModal').classList.add('hidden');
-                    loadGameState();
-                }
-            });
+            // Recovery modal buttons - ensure they're properly attached
+            const continueBtn = document.getElementById('continueGameBtn');
+            const discardBtn = document.getElementById('discardGameBtn');
             
-            document.getElementById('discardGameBtn').addEventListener('click', () => {
-                localStorage.removeItem('unfinishedGame');
-                document.getElementById('recoveryModal').classList.add('hidden');
-                showScreen('setup');
-            });
+            if (continueBtn) {
+                continueBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Continue button clicked');
+                    const unfinishedGame = localStorage.getItem('unfinishedGame');
+                    if (unfinishedGame) {
+                        currentGame = JSON.parse(unfinishedGame);
+                        const modal = document.getElementById('recoveryModal');
+                        modal.classList.add('hidden');
+                        loadGameState();
+                    }
+                });
+            }
+            
+            if (discardBtn) {
+                discardBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Discard button clicked');
+                    localStorage.removeItem('unfinishedGame');
+                    const modal = document.getElementById('recoveryModal');
+                    modal.classList.add('hidden');
+                    showScreen('setup');
+                });
+            }
             
             // Navigation
             document.getElementById('newGameBtn').addEventListener('click', () => {
