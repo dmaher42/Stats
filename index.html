@@ -317,6 +317,61 @@
             color: var(--primary);
         }
 
+        .auto-save-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background-color: var(--secondary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 999;
+        }
+
+        .auto-save-indicator.show {
+            opacity: 1;
+        }
+
+        .recovery-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .recovery-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .recovery-content h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .recovery-content p {
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .recovery-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
         @media (max-width: 600px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -487,6 +542,7 @@
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button id="endGameBtn" class="danger">End Game</button>
                     <button id="undoBtn">Undo Last Action</button>
+                    <button id="saveProgressBtn" class="secondary">Save Progress</button>
                 </div>
             </div>
         </div>
@@ -510,6 +566,21 @@
                 <h2>Game History</h2>
                 <div id="historyContent" class="game-list"></div>
                 <button id="backFromHistoryBtn">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-save indicator -->
+    <div id="autoSaveIndicator" class="auto-save-indicator">Game Auto-Saved</div>
+
+    <!-- Recovery Modal -->
+    <div id="recoveryModal" class="recovery-modal hidden">
+        <div class="recovery-content">
+            <h3>⚠️ Unfinished Game Found</h3>
+            <p>We found an unfinished game from <strong id="recoveryGameInfo"></strong>. Would you like to continue where you left off?</p>
+            <div class="recovery-buttons">
+                <button id="continueGameBtn" class="secondary">Continue Game</button>
+                <button id="discardGameBtn" class="danger">Discard & Start New</button>
             </div>
         </div>
     </div>
@@ -543,6 +614,7 @@
         let timerInterval = null;
         let timerRunning = false;
         let gameHistory = JSON.parse(localStorage.getItem('basketballGames')) || [];
+        let autoSaveInterval = null;
 
         // DOM elements
         const screens = {
@@ -557,6 +629,9 @@
             // Set today's date as default
             document.getElementById('gameDate').valueAsDate = new Date();
             
+            // Check for unfinished game
+            checkForUnfinishedGame();
+            
             // Setup event listeners
             setupEventListeners();
             
@@ -564,9 +639,52 @@
             showScreen('setup');
         });
 
+        function checkForUnfinishedGame() {
+            const unfinishedGame = localStorage.getItem('unfinishedGame');
+            if (unfinishedGame) {
+                try {
+                    const game = JSON.parse(unfinishedGame);
+                    if (game.playerName && game.opponent) {
+                        document.getElementById('recoveryGameInfo').textContent = 
+                            `${game.playerName} vs ${game.opponent}`;
+                        document.getElementById('recoveryModal').classList.remove('hidden');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('unfinishedGame');
+                }
+            }
+        }
+
         function setupEventListeners() {
+            // Recovery modal buttons
+            document.getElementById('continueGameBtn').addEventListener('click', () => {
+                const unfinishedGame = localStorage.getItem('unfinishedGame');
+                if (unfinishedGame) {
+                    currentGame = JSON.parse(unfinishedGame);
+                    document.getElementById('recoveryModal').classList.add('hidden');
+                    loadGameState();
+                }
+            });
+            
+            document.getElementById('discardGameBtn').addEventListener('click', () => {
+                localStorage.removeItem('unfinishedGame');
+                document.getElementById('recoveryModal').classList.add('hidden');
+                showScreen('setup');
+            });
+            
             // Navigation
-            document.getElementById('newGameBtn').addEventListener('click', () => showScreen('setup'));
+            document.getElementById('newGameBtn').addEventListener('click', () => {
+                if (currentGame.playerName && currentGame.opponent) {
+                    if (confirm('Starting a new game will discard the current game. Continue?')) {
+                        localStorage.removeItem('unfinishedGame');
+                        stopAutoSave();
+                        showScreen('setup');
+                    }
+                } else {
+                    showScreen('setup');
+                }
+            });
+            
             document.getElementById('historyBtn').addEventListener('click', () => {
                 renderHistory();
                 showScreen('history');
@@ -581,6 +699,7 @@
             document.getElementById('resetTimerBtn').addEventListener('click', resetTimer);
             document.getElementById('endGameBtn').addEventListener('click', endGame);
             document.getElementById('undoBtn').addEventListener('click', undoLastAction);
+            document.getElementById('saveProgressBtn').addEventListener('click', saveProgress);
             
             // Action buttons
             document.querySelectorAll('.action-button').forEach(button => {
@@ -592,7 +711,10 @@
             
             // Summary screen
             document.getElementById('saveGameBtn').addEventListener('click', saveGame);
-            document.getElementById('newGameFromSummaryBtn').addEventListener('click', () => showScreen('setup'));
+            document.getElementById('newGameFromSummaryBtn').addEventListener('click', () => {
+                localStorage.removeItem('unfinishedGame');
+                showScreen('setup');
+            });
             document.getElementById('historyFromSummaryBtn').addEventListener('click', () => {
                 renderHistory();
                 showScreen('history');
@@ -600,6 +722,13 @@
             
             // History screen
             document.getElementById('backFromHistoryBtn').addEventListener('click', () => showScreen('setup'));
+            
+            // Auto-save on page unload
+            window.addEventListener('beforeunload', () => {
+                if (currentGame.playerName && currentGame.opponent) {
+                    saveGameState();
+                }
+            });
         }
 
         function showScreen(screenName) {
@@ -651,8 +780,66 @@
             // Update display
             updateStatsDisplay();
             
+            // Start auto-save
+            startAutoSave();
+            
             // Show game screen
             showScreen('game');
+        }
+
+        function loadGameState() {
+            // Update game title
+            document.getElementById('gameTitle').textContent = `${currentGame.playerName} vs ${currentGame.opponent}`;
+            
+            // Update timer display
+            updateTimerDisplay();
+            
+            // Update stats display
+            updateStatsDisplay();
+            
+            // Start auto-save
+            startAutoSave();
+            
+            // Show game screen
+            showScreen('game');
+            
+            showToast('Game restored successfully!');
+        }
+
+        function startAutoSave() {
+            // Save immediately
+            saveGameState();
+            
+            // Then save every 30 seconds
+            autoSaveInterval = setInterval(() => {
+                saveGameState();
+                showAutoSaveIndicator();
+            }, 30000);
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+            }
+        }
+
+        function saveGameState() {
+            localStorage.setItem('unfinishedGame', JSON.stringify(currentGame));
+        }
+
+        function saveProgress() {
+            saveGameState();
+            showToast('Progress saved manually!');
+            showAutoSaveIndicator();
+        }
+
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
         }
 
         function startTimer() {
@@ -750,6 +937,9 @@
                 points
             });
             
+            // Auto-save after each action
+            saveGameState();
+            
             // Update display
             updateStatsDisplay();
             
@@ -808,6 +998,9 @@
                     break;
             }
             
+            // Auto-save after undo
+            saveGameState();
+            
             // Update display
             updateStatsDisplay();
             
@@ -844,6 +1037,7 @@
 
         function endGame() {
             pauseTimer();
+            stopAutoSave();
             renderSummary();
             showScreen('summary');
         }
@@ -932,6 +1126,9 @@
             
             gameHistory.push(gameToSave);
             localStorage.setItem('basketballGames', JSON.stringify(gameHistory));
+            
+            // Clear unfinished game
+            localStorage.removeItem('unfinishedGame');
             
             showToast('Game saved successfully!');
             renderHistory();
