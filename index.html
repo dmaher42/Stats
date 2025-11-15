@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Basketball Stats Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: white;
+            box-shadow: var(--shadow);
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.secondary {
+            background-color: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background-color: #27ae60;
+        }
+
+        button.danger {
+            background-color: var(--danger);
+        }
+
+        button.danger:hover {
+            background-color: #c0392b;
+        }
+
+        button.warning {
+            background-color: var(--warning);
+        }
+
+        button.warning:hover {
+            background-color: #e67e22;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--light);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark);
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-button {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .action-button.miss {
+            border-color: var(--warning);
+        }
+
+        .action-button.miss:hover {
+            background-color: var(--warning);
+        }
+
+        .action-button span {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .game-timer {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .game-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .game-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .game-info h3 {
+            margin-bottom: 5px;
+        }
+
+        .game-info p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .game-stats {
+            text-align: right;
+        }
+
+        .game-stats .points {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .game-stats .details {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .shooting-stats {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .shooting-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .shooting-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .shooting-label {
+            font-weight: 600;
+        }
+
+        .shooting-percentage {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>🏀 Basketball Stats Tracker</h1>
+            <div class="nav-buttons">
+                <button id="newGameBtn">New Game</button>
+                <button id="historyBtn">History</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- New Game Setup Screen -->
+        <div id="setupScreen" class="screen">
+            <div class="card">
+                <h2>Start New Game</h2>
+                <div class="form-group">
+                    <label for="playerName">Player Name</label>
+                    <input type="text" id="playerName" placeholder="Enter player name">
+                </div>
+                <div class="form-group">
+                    <label for="opponent">Opponent</label>
+                    <input type="text" id="opponent" placeholder="Enter opponent name">
+                </div>
+                <div class="form-group">
+                    <label for="gameDate">Game Date</label>
+                    <input type="date" id="gameDate">
+                </div>
+                <button id="startGameBtn" class="secondary">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Game Tracking Screen -->
+        <div id="gameScreen" class="screen hidden">
+            <div class="card">
+                <div class="game-timer" id="gameTimer">00:00</div>
+                <div class="timer-controls">
+                    <button id="startTimerBtn">Start Timer</button>
+                    <button id="pauseTimerBtn">Pause</button>
+                    <button id="resetTimerBtn">Reset</button>
+                </div>
+                
+                <h2 id="gameTitle">Game Stats</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="pointsValue">0</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="reboundsValue">0</div>
+                        <div class="stat-label">Rebounds</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="assistsValue">0</div>
+                        <div class="stat-label">Assists</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stealsValue">0</div>
+                        <div class="stat-label">Steals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="blocksValue">0</div>
+                        <div class="stat-label">Blocks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="turnoversValue">0</div>
+                        <div class="stat-label">Turnovers</div>
+                    </div>
+                </div>
+
+                <div class="shooting-stats">
+                    <h3>Shooting Stats</h3>
+                    <div class="shooting-row">
+                        <span class="shooting-label">2-Pointers:</span>
+                        <span class="shooting-percentage" id="twoPtPercentage">0/0 (0%)</span>
+                    </div>
+                    <div class="shooting-row">
+                        <span class="shooting-label">3-Pointers:</span>
+                        <span class="shooting-percentage" id="threePtPercentage">0/0 (0%)</span>
+                    </div>
+                    <div class="shooting-row">
+                        <span class="shooting-label">Free Throws:</span>
+                        <span class="shooting-percentage" id="ftPercentage">0/0 (0%)</span>
+                    </div>
+                </div>
+                
+                <h3>Track Actions</h3>
+                <div class="action-buttons">
+                    <div class="action-button" data-action="2pt">
+                        <span>🏀</span>
+                        <span>2 Points Made</span>
+                    </div>
+                    <div class="action-button miss" data-action="2pt-miss">
+                        <span>❌</span>
+                        <span>2 Points Missed</span>
+                    </div>
+                    <div class="action-button" data-action="3pt">
+                        <span>🎯</span>
+                        <span>3 Points Made</span>
+                    </div>
+                    <div class="action-button miss" data-action="3pt-miss">
+                        <span>❌</span>
+                        <span>3 Points Missed</span>
+                    </div>
+                    <div class="action-button" data-action="ft">
+                        <span>✅</span>
+                        <span>Free Throw Made</span>
+                    </div>
+                    <div class="action-button miss" data-action="ft-miss">
+                        <span>❌</span>
+                        <span>Free Throw Missed</span>
+                    </div>
+                    <div class="action-button" data-action="reb">
+                        <span>📦</span>
+                        <span>Rebound</span>
+                    </div>
+                    <div class="action-button" data-action="ast">
+                        <span>🤝</span>
+                        <span>Assist</span>
+                    </div>
+                    <div class="action-button" data-action="stl">
+                        <span>💨</span>
+                        <span>Steal</span>
+                    </div>
+                    <div class="action-button" data-action="blk">
+                        <span>🚫</span>
+                        <span>Block</span>
+                    </div>
+                    <div class="action-button" data-action="to">
+                        <span>🔄</span>
+                        <span>Turnover</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="endGameBtn" class="danger">End Game</button>
+                    <button id="undoBtn">Undo Last Action</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Summary Screen -->
+        <div id="summaryScreen" class="screen hidden">
+            <div class="card">
+                <h2>Game Summary</h2>
+                <div id="summaryContent"></div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="saveGameBtn" class="secondary">Save Game</button>
+                    <button id="newGameFromSummaryBtn">New Game</button>
+                    <button id="historyFromSummaryBtn">View History</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game History Screen -->
+        <div id="historyScreen" class="screen hidden">
+            <div class="card">
+                <h2>Game History</h2>
+                <div id="historyContent" class="game-list"></div>
+                <button id="backFromHistoryBtn">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // App state
+        let currentGame = {
+            playerName: '',
+            opponent: '',
+            date: '',
+            stats: {
+                points: 0,
+                twoPointersMade: 0,
+                twoPointersAttempted: 0,
+                threePointersMade: 0,
+                threePointersAttempted: 0,
+                freeThrowsMade: 0,
+                freeThrowsAttempted: 0,
+                rebounds: 0,
+                assists: 0,
+                steals: 0,
+                blocks: 0,
+                turnovers: 0
+            },
+            actionHistory: [],
+            duration: 0
+        };
+
+        let timerInterval = null;
+        let timerRunning = false;
+        let gameHistory = JSON.parse(localStorage.getItem('basketballGames')) || [];
+
+        // DOM elements
+        const screens = {
+            setup: document.getElementById('setupScreen'),
+            game: document.getElementById('gameScreen'),
+            summary: document.getElementById('summaryScreen'),
+            history: document.getElementById('historyScreen')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set today's date as default
+            document.getElementById('gameDate').valueAsDate = new Date();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Show setup screen by default
+            showScreen('setup');
+        });
+
+        function setupEventListeners() {
+            // Navigation
+            document.getElementById('newGameBtn').addEventListener('click', () => showScreen('setup'));
+            document.getElementById('historyBtn').addEventListener('click', () => {
+                renderHistory();
+                showScreen('history');
+            });
+            
+            // Setup screen
+            document.getElementById('startGameBtn').addEventListener('click', startNewGame);
+            
+            // Game screen
+            document.getElementById('startTimerBtn').addEventListener('click', startTimer);
+            document.getElementById('pauseTimerBtn').addEventListener('click', pauseTimer);
+            document.getElementById('resetTimerBtn').addEventListener('click', resetTimer);
+            document.getElementById('endGameBtn').addEventListener('click', endGame);
+            document.getElementById('undoBtn').addEventListener('click', undoLastAction);
+            
+            // Action buttons
+            document.querySelectorAll('.action-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const action = button.getAttribute('data-action');
+                    trackAction(action);
+                });
+            });
+            
+            // Summary screen
+            document.getElementById('saveGameBtn').addEventListener('click', saveGame);
+            document.getElementById('newGameFromSummaryBtn').addEventListener('click', () => showScreen('setup'));
+            document.getElementById('historyFromSummaryBtn').addEventListener('click', () => {
+                renderHistory();
+                showScreen('history');
+            });
+            
+            // History screen
+            document.getElementById('backFromHistoryBtn').addEventListener('click', () => showScreen('setup'));
+        }
+
+        function showScreen(screenName) {
+            Object.keys(screens).forEach(key => {
+                screens[key].classList.add('hidden');
+            });
+            screens[screenName].classList.remove('hidden');
+        }
+
+        function startNewGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+            const opponent = document.getElementById('opponent').value.trim();
+            const gameDate = document.getElementById('gameDate').value;
+            
+            if (!playerName || !opponent || !gameDate) {
+                showToast('Please fill in all fields');
+                return;
+            }
+            
+            // Reset current game
+            currentGame = {
+                playerName,
+                opponent,
+                date: gameDate,
+                stats: {
+                    points: 0,
+                    twoPointersMade: 0,
+                    twoPointersAttempted: 0,
+                    threePointersMade: 0,
+                    threePointersAttempted: 0,
+                    freeThrowsMade: 0,
+                    freeThrowsAttempted: 0,
+                    rebounds: 0,
+                    assists: 0,
+                    steals: 0,
+                    blocks: 0,
+                    turnovers: 0
+                },
+                actionHistory: [],
+                duration: 0
+            };
+            
+            // Update game title
+            document.getElementById('gameTitle').textContent = `${playerName} vs ${opponent}`;
+            
+            // Reset timer
+            resetTimer();
+            
+            // Update display
+            updateStatsDisplay();
+            
+            // Show game screen
+            showScreen('game');
+        }
+
+        function startTimer() {
+            if (!timerRunning) {
+                timerRunning = true;
+                timerInterval = setInterval(() => {
+                    currentGame.duration++;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            timerRunning = false;
+            clearInterval(timerInterval);
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            currentGame.duration = 0;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(currentGame.duration / 60);
+            const seconds = currentGame.duration % 60;
+            document.getElementById('gameTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function trackAction(action) {
+            let points = 0;
+            let message = '';
+            
+            switch(action) {
+                case '2pt':
+                    currentGame.stats.points += 2;
+                    currentGame.stats.twoPointersMade++;
+                    currentGame.stats.twoPointersAttempted++;
+                    points = 2;
+                    message = '2 points made!';
+                    break;
+                case '2pt-miss':
+                    currentGame.stats.twoPointersAttempted++;
+                    message = '2-pointer missed';
+                    break;
+                case '3pt':
+                    currentGame.stats.points += 3;
+                    currentGame.stats.threePointersMade++;
+                    currentGame.stats.threePointersAttempted++;
+                    points = 3;
+                    message = '3 points made!';
+                    break;
+                case '3pt-miss':
+                    currentGame.stats.threePointersAttempted++;
+                    message = '3-pointer missed';
+                    break;
+                case 'ft':
+                    currentGame.stats.points += 1;
+                    currentGame.stats.freeThrowsMade++;
+                    currentGame.stats.freeThrowsAttempted++;
+                    points = 1;
+                    message = 'Free throw made!';
+                    break;
+                case 'ft-miss':
+                    currentGame.stats.freeThrowsAttempted++;
+                    message = 'Free throw missed';
+                    break;
+                case 'reb':
+                    currentGame.stats.rebounds++;
+                    message = 'Rebound!';
+                    break;
+                case 'ast':
+                    currentGame.stats.assists++;
+                    message = 'Assist!';
+                    break;
+                case 'stl':
+                    currentGame.stats.steals++;
+                    message = 'Steal!';
+                    break;
+                case 'blk':
+                    currentGame.stats.blocks++;
+                    message = 'Block!';
+                    break;
+                case 'to':
+                    currentGame.stats.turnovers++;
+                    message = 'Turnover';
+                    break;
+            }
+            
+            // Add to action history
+            currentGame.actionHistory.push({
+                action,
+                time: currentGame.duration,
+                points
+            });
+            
+            // Update display
+            updateStatsDisplay();
+            
+            // Show feedback
+            showToast(message);
+        }
+
+        function undoLastAction() {
+            if (currentGame.actionHistory.length === 0) {
+                showToast('No actions to undo');
+                return;
+            }
+            
+            const lastAction = currentGame.actionHistory.pop();
+            
+            // Reverse the action
+            switch(lastAction.action) {
+                case '2pt':
+                    currentGame.stats.points -= 2;
+                    currentGame.stats.twoPointersMade--;
+                    currentGame.stats.twoPointersAttempted--;
+                    break;
+                case '2pt-miss':
+                    currentGame.stats.twoPointersAttempted--;
+                    break;
+                case '3pt':
+                    currentGame.stats.points -= 3;
+                    currentGame.stats.threePointersMade--;
+                    currentGame.stats.threePointersAttempted--;
+                    break;
+                case '3pt-miss':
+                    currentGame.stats.threePointersAttempted--;
+                    break;
+                case 'ft':
+                    currentGame.stats.points -= 1;
+                    currentGame.stats.freeThrowsMade--;
+                    currentGame.stats.freeThrowsAttempted--;
+                    break;
+                case 'ft-miss':
+                    currentGame.stats.freeThrowsAttempted--;
+                    break;
+                case 'reb':
+                    currentGame.stats.rebounds--;
+                    break;
+                case 'ast':
+                    currentGame.stats.assists--;
+                    break;
+                case 'stl':
+                    currentGame.stats.steals--;
+                    break;
+                case 'blk':
+                    currentGame.stats.blocks--;
+                    break;
+                case 'to':
+                    currentGame.stats.turnovers--;
+                    break;
+            }
+            
+            // Update display
+            updateStatsDisplay();
+            
+            // Show feedback
+            showToast('Action undone');
+        }
+
+        function updateStatsDisplay() {
+            document.getElementById('pointsValue').textContent = currentGame.stats.points;
+            document.getElementById('reboundsValue').textContent = currentGame.stats.rebounds;
+            document.getElementById('assistsValue').textContent = currentGame.stats.assists;
+            document.getElementById('stealsValue').textContent = currentGame.stats.steals;
+            document.getElementById('blocksValue').textContent = currentGame.stats.blocks;
+            document.getElementById('turnoversValue').textContent = currentGame.stats.turnovers;
+            
+            // Update shooting percentages
+            const twoPtPct = currentGame.stats.twoPointersAttempted > 0 
+                ? Math.round((currentGame.stats.twoPointersMade / currentGame.stats.twoPointersAttempted) * 100) 
+                : 0;
+            const threePtPct = currentGame.stats.threePointersAttempted > 0 
+                ? Math.round((currentGame.stats.threePointersMade / currentGame.stats.threePointersAttempted) * 100) 
+                : 0;
+            const ftPct = currentGame.stats.freeThrowsAttempted > 0 
+                ? Math.round((currentGame.stats.freeThrowsMade / currentGame.stats.freeThrowsAttempted) * 100) 
+                : 0;
+            
+            document.getElementById('twoPtPercentage').textContent = 
+                `${currentGame.stats.twoPointersMade}/${currentGame.stats.twoPointersAttempted} (${twoPtPct}%)`;
+            document.getElementById('threePtPercentage').textContent = 
+                `${currentGame.stats.threePointersMade}/${currentGame.stats.threePointersAttempted} (${threePtPct}%)`;
+            document.getElementById('ftPercentage').textContent = 
+                `${currentGame.stats.freeThrowsMade}/${currentGame.stats.freeThrowsAttempted} (${ftPct}%)`;
+        }
+
+        function endGame() {
+            pauseTimer();
+            renderSummary();
+            showScreen('summary');
+        }
+
+        function renderSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const minutes = Math.floor(currentGame.duration / 60);
+            const seconds = currentGame.duration % 60;
+            
+            const twoPtPct = currentGame.stats.twoPointersAttempted > 0 
+                ? Math.round((currentGame.stats.twoPointersMade / currentGame.stats.twoPointersAttempted) * 100) 
+                : 0;
+            const threePtPct = currentGame.stats.threePointersAttempted > 0 
+                ? Math.round((currentGame.stats.threePointersMade / currentGame.stats.threePointersAttempted) * 100) 
+                : 0;
+            const ftPct = currentGame.stats.freeThrowsAttempted > 0 
+                ? Math.round((currentGame.stats.freeThrowsMade / currentGame.stats.freeThrowsAttempted) * 100) 
+                : 0;
+            
+            summaryContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3>${currentGame.playerName} vs ${currentGame.opponent}</h3>
+                    <p>${new Date(currentGame.date).toLocaleDateString()} - ${minutes}:${seconds.toString().padStart(2, '0')}</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.points}</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.rebounds}</div>
+                        <div class="stat-label">Rebounds</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.assists}</div>
+                        <div class="stat-label">Assists</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.steals}</div>
+                        <div class="stat-label">Steals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.blocks}</div>
+                        <div class="stat-label">Blocks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${currentGame.stats.turnovers}</div>
+                        <div class="stat-label">Turnovers</div>
+                    </div>
+                </div>
+                
+                <div class="shooting-stats">
+                    <h4>Shooting Breakdown:</h4>
+                    <div class="shooting-row">
+                        <span class="shooting-label">2-Pointers:</span>
+                        <span class="shooting-percentage">${currentGame.stats.twoPointersMade}/${currentGame.stats.twoPointersAttempted} (${twoPtPct}%)</span>
+                    </div>
+                    <div class="shooting-row">
+                        <span class="shooting-label">3-Pointers:</span>
+                        <span class="shooting-percentage">${currentGame.stats.threePointersMade}/${currentGame.stats.threePointersAttempted} (${threePtPct}%)</span>
+                    </div>
+                    <div class="shooting-row">
+                        <span class="shooting-label">Free Throws:</span>
+                        <span class="shooting-percentage">${currentGame.stats.freeThrowsMade}/${currentGame.stats.freeThrowsAttempted} (${ftPct}%)</span>
+                    </div>
+                    <div class="shooting-row">
+                        <span class="shooting-label">Field Goal %:</span>
+                        <span class="shooting-percentage">${calculateFGP()}%</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateFGP() {
+            const totalFGM = currentGame.stats.twoPointersMade + currentGame.stats.threePointersMade;
+            const totalFGA = currentGame.stats.twoPointersAttempted + currentGame.stats.threePointersAttempted;
+            return totalFGA > 0 ? Math.round((totalFGM / totalFGA) * 100) : 0;
+        }
+
+        function saveGame() {
+            const gameToSave = {
+                ...currentGame,
+                id: Date.now()
+            };
+            
+            gameHistory.push(gameToSave);
+            localStorage.setItem('basketballGames', JSON.stringify(gameHistory));
+            
+            showToast('Game saved successfully!');
+            renderHistory();
+            showScreen('history');
+        }
+
+        function renderHistory() {
+            const historyContent = document.getElementById('historyContent');
+            
+            if (gameHistory.length === 0) {
+                historyContent.innerHTML = '<p>No games saved yet</p>';
+                return;
+            }
+            
+            // Sort games by date (newest first)
+            const sortedHistory = [...gameHistory].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+            
+            historyContent.innerHTML = sortedHistory.map(game => {
+                const minutes = Math.floor(game.duration / 60);
+                const seconds = game.duration % 60;
+                
+                return `
+                    <div class="game-item" data-id="${game.id}">
+                        <div class="game-info">
+                            <h3>${game.playerName} vs ${game.opponent}</h3>
+                            <p>${new Date(game.date).toLocaleDateString()} - ${minutes}:${seconds.toString().padStart(2, '0')}</p>
+                        </div>
+                        <div class="game-stats">
+                            <div class="points">${game.stats.points} pts</div>
+                            <div class="details">${game.stats.rebounds} reb, ${game.stats.assists} ast</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click event to view game details
+            document.querySelectorAll('.game-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const gameId = parseInt(item.getAttribute('data-id'));
+                    const game = gameHistory.find(g => g.id === gameId);
+                    if (game) {
+                        currentGame = {...game};
+                        renderSummary();
+                        showScreen('summary');
+                    }
+                });
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
