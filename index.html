@@ -137,22 +137,32 @@
         }
 
         .stat-card {
-            background-color: var(--light);
-            border-radius: 8px;
+            background: linear-gradient(135deg, #ffffff, #ecf6ff);
+            border-radius: 12px;
             padding: 15px;
             text-align: center;
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: var(--primary);
+            border-radius: 999px;
+            padding: 4px 12px;
+            display: inline-block;
+            background-color: #fff;
         }
 
         .stat-label {
             font-size: 0.9rem;
             color: var(--dark);
             margin-top: 5px;
+        }
+
+        .game-meta {
+            margin-top: 4px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
         }
 
         .action-section {
@@ -189,12 +199,26 @@
             color: white;
         }
 
+        .action-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+        }
+
         .action-button.miss {
             border-color: var(--warning);
         }
 
         .action-button.miss:hover {
             background-color: var(--warning);
+        }
+
+        .action-button.miss:active {
+            box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.25);
+        }
+
+        .action-button.disabled {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         .action-button span:first-child {
@@ -442,6 +466,7 @@
                 </div>
                 
                 <h2 id="gameTitle">Game Stats</h2>
+                <p id="gameMeta" class="game-meta"></p>
                 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -559,6 +584,7 @@
                 <div id="summaryContent"></div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button id="saveGameBtn" class="secondary">Save Game</button>
+                    <button id="copySummaryBtn" class="warning">Copy Summary</button>
                     <button id="newGameFromSummaryBtn">New Game</button>
                     <button id="historyFromSummaryBtn">View History</button>
                 </div>
@@ -569,6 +595,7 @@
         <div id="historyScreen" class="screen hidden">
             <div class="card">
                 <h2>Game History</h2>
+                <div id="careerSummary" class="shooting-stats" style="margin-bottom: 15px;"></div>
                 <div id="historyContent" class="game-list"></div>
                 <button id="backFromHistoryBtn">Back</button>
             </div>
@@ -620,6 +647,7 @@
         let timerRunning = false;
         let gameHistory = JSON.parse(localStorage.getItem('basketballGames')) || [];
         let autoSaveInterval = null;
+        let gameActive = false;
 
         // DOM elements
         const screens = {
@@ -636,6 +664,9 @@
             
             // Setup event listeners first
             setupEventListeners();
+            
+            // Initialize game state (buttons disabled)
+            setGameActive(false);
             
             // Check for unfinished game after setting up listeners
             setTimeout(() => {
@@ -691,6 +722,7 @@
                     localStorage.removeItem('unfinishedGame');
                     const modal = document.getElementById('recoveryModal');
                     modal.classList.add('hidden');
+                    setGameActive(false);
                     showScreen('setup');
                 });
             }
@@ -701,15 +733,18 @@
                     if (confirm('Starting a new game will discard the current game. Continue?')) {
                         localStorage.removeItem('unfinishedGame');
                         stopAutoSave();
+                        setGameActive(false);
                         showScreen('setup');
                     }
                 } else {
+                    setGameActive(false);
                     showScreen('setup');
                 }
             });
             
             document.getElementById('historyBtn').addEventListener('click', () => {
                 renderHistory();
+                renderCareerSummary();
                 showScreen('history');
             });
             
@@ -734,12 +769,15 @@
             
             // Summary screen
             document.getElementById('saveGameBtn').addEventListener('click', saveGame);
+            document.getElementById('copySummaryBtn').addEventListener('click', copySummaryToClipboard);
             document.getElementById('newGameFromSummaryBtn').addEventListener('click', () => {
                 localStorage.removeItem('unfinishedGame');
+                setGameActive(false);
                 showScreen('setup');
             });
             document.getElementById('historyFromSummaryBtn').addEventListener('click', () => {
                 renderHistory();
+                renderCareerSummary();
                 showScreen('history');
             });
             
@@ -759,6 +797,22 @@
                 screens[key].classList.add('hidden');
             });
             screens[screenName].classList.remove('hidden');
+        }
+
+        function setGameActive(active) {
+            gameActive = active;
+            document.querySelectorAll('.action-button').forEach(btn => {
+                btn.disabled = !active;
+                btn.classList.toggle('disabled', !active);
+            });
+        }
+
+        function updateGameHeader() {
+            const dateStr = new Date(currentGame.date).toLocaleDateString();
+            document.getElementById('gameTitle').textContent =
+                `${currentGame.playerName} vs ${currentGame.opponent}`;
+            document.getElementById('gameMeta').textContent =
+                `Game date: ${dateStr}`;
         }
 
         function startNewGame() {
@@ -794,14 +848,17 @@
                 duration: 0
             };
             
-            // Update game title
-            document.getElementById('gameTitle').textContent = `${playerName} vs ${opponent}`;
+            // Update game header
+            updateGameHeader();
             
             // Reset timer
             resetTimer();
             
             // Update display
             updateStatsDisplay();
+            
+            // Enable game actions
+            setGameActive(true);
             
             // Start auto-save
             startAutoSave();
@@ -811,14 +868,17 @@
         }
 
         function loadGameState() {
-            // Update game title
-            document.getElementById('gameTitle').textContent = `${currentGame.playerName} vs ${currentGame.opponent}`;
+            // Update game header
+            updateGameHeader();
             
             // Update timer display
             updateTimerDisplay();
             
             // Update stats display
             updateStatsDisplay();
+            
+            // Enable game actions
+            setGameActive(true);
             
             // Start auto-save
             startAutoSave();
@@ -830,6 +890,9 @@
         }
 
         function startAutoSave() {
+            // Guard against multiple intervals
+            if (autoSaveInterval) return;
+            
             // Save immediately
             saveGameState();
             
@@ -894,6 +957,11 @@
         }
 
         function trackAction(action) {
+            if (!gameActive) {
+                showToast('Start a game first');
+                return;
+            }
+            
             let points = 0;
             let message = '';
             
@@ -1059,8 +1127,11 @@
         }
 
         function endGame() {
+            if (!confirm('Finish this game and view the summary?')) return;
+            
             pauseTimer();
             stopAutoSave();
+            setGameActive(false);
             renderSummary();
             showScreen('summary');
         }
@@ -1141,6 +1212,43 @@
             return totalFGA > 0 ? Math.round((totalFGM / totalFGA) * 100) : 0;
         }
 
+        function copySummaryToClipboard() {
+            const minutes = Math.floor(currentGame.duration / 60);
+            const seconds = currentGame.duration %  seconds;
+            const twoPtPct = currentGame.stats.twoPointersAttempted > 0 
+                ? Math.round((currentGame.stats.twoPointersMade / currentGame.stats.twoPointersAttempted) * 100) 
+                : 0;
+            const threePtPct = currentGame.stats.threePointersAttempted > 0 
+                ? Math.round((currentGame.stats.threePointersMade / currentGame.stats.threePointersAttempted) * 100) 
+                : 0;
+            const ftPct = currentGame.stats.freeThrowsAttempted > 0 
+                ? Math.round((currentGame.stats.freeThrowsMade / currentGame.stats.freeThrowsAttempted) * 100) 
+                : 0;
+
+            const text = `
+ ${currentGame.playerName} vs ${currentGame.opponent}
+Date: ${new Date(currentGame.date).toLocaleDateString()}
+Time played: ${minutes}:${seconds.toString().padStart(2, '0')}
+
+Points: ${currentGame.stats.points}
+Rebounds: ${currentGame.stats.rebounds}
+Assists: ${currentGame.stats.assists}
+Steals: ${currentGame.stats.steals}
+Blocks: ${currentGame.stats.blocks}
+Turnovers: ${currentGame.stats.turnovers}
+
+Shooting:
+2-Pointers: ${currentGame.stats.twoPointersMade}/${currentGame.stats.twoPointersAttempted} (${twoPtPct}%)
+3-Pointers: ${currentGame.stats.threePointersMade}/${currentGame.stats.threePointersAttempted} (${threePtPct}%)
+Free Throws: ${currentGame.stats.freeThrowsMade}/${currentGame.stats.freeThrowsAttempted} (${ftPct}%)
+Field Goal %: ${calculateFGP()}%
+`;
+
+            navigator.clipboard.writeText(text.trim())
+                .then(() => showToast('Summary copied to clipboard'))
+                .catch(() => showToast('Could not copy summary'));
+        }
+
         function saveGame() {
             const gameToSave = {
                 ...currentGame,
@@ -1155,6 +1263,7 @@
             
             showToast('Game saved successfully!');
             renderHistory();
+            renderCareerSummary();
             showScreen('history');
         }
 
@@ -1175,6 +1284,11 @@
                 const minutes = Math.floor(game.duration / 60);
                 const seconds = game.duration % 60;
                 
+                // Calculate field goal percentage
+                const totalFGM = game.stats.twoPointersMade + game.stats.threePointersMade;
+                const totalFGA = game.stats.twoPointersAttempted + game.stats.threePointersAttempted;
+                const fgPct = totalFGA > 0 ? Math.round((totalFGM / totalFGA) * 100) : 0;
+                
                 return `
                     <div class="game-item" data-id="${game.id}">
                         <div class="game-info">
@@ -1183,7 +1297,10 @@
                         </div>
                         <div class="game-stats">
                             <div class="points">${game.stats.points} pts</div>
-                            <div class="details">${game.stats.rebounds} reb, ${game.stats.assists} ast</div>
+                            <div class="details">
+                                ${game.stats.rebounds} reb, ${game.stats.assists} ast<br>
+                                FG: ${fgPct}%
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1201,6 +1318,54 @@
                     }
                 });
             });
+        }
+
+        function renderCareerSummary() {
+            const summaryEl = document.getElementById('careerSummary');
+            if (!summaryEl || gameHistory.length === 0) {
+                if (summaryEl) summaryEl.innerHTML = '';
+                return;
+            }
+
+            let totalGames = gameHistory.length;
+            let totals = {
+                points: 0, rebounds: 0, assists: 0,
+                steals: 0, blocks: 0, turnovers: 0,
+                fgm: 0, fga: 0
+            };
+
+            gameHistory.forEach(g => {
+                totals.points += g.stats.points;
+                totals.rebounds += g.stats.rebounds;
+                totals.assists += g.stats.assists;
+                totals.steals += g.stats.steals;
+                totals.blocks += g.stats.blocks;
+                totals.turnovers += g.stats.turnovers;
+                totals.fgm += g.stats.twoPointersMade + g.stats.threePointersMade;
+                totals.fga += g.stats.twoPointersAttempted + g.stats.threePointersAttempted;
+            });
+
+            const fgPct = totals.fga > 0 ? Math.round((totals.fgm / totals.fga) * 100) : 0;
+
+            summaryEl.innerHTML = `
+                <h4>Career Summary (${totalGames} games)</h4>
+                <div class="shooting-row">
+                    <span class="shooting-label">Points per game:</span>
+                    <span class="shooting-percentage">${(totals.points / totalGames).toFixed(1)}</span>
+                </div>
+                <div class="shooting-row">
+                    <span class="shooting-label">Rebounds per game:</span>
+                    <span class="shooting-percentage">${(totals.rebounds / totalGames).toFixed(1)}</span>
+                </div>
+                <div class="shooting-row">
+                    <span class="shooting-label">Assists per game:</span>
+                    <span class="shooting-percentage">${(totals.assists / totalGames).toFixed(1)}</span>
+                </div>
+                <div class="shooting-row">
+                    <span class="shooting-label">FG%:</span>
+                    <span class="shooting-percentage">${fgPct}%</span>
+                </div>
+            `;
         }
 
         function showToast(message) {
