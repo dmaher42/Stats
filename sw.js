@@ -1,10 +1,10 @@
 const CACHE_NAME = 'bball-tracker-v1';
 const ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icon-192.png',
-  './icon-512.png'
+  '/Stats/',
+  '/Stats/index.html',
+  '/Stats/manifest.webmanifest',
+  '/Stats/icon-192.png',
+  '/Stats/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
